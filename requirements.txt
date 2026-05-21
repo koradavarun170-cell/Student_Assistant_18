@@ -1,0 +1,17 @@
+langchain
+langchain_core
+langchain-community
+langchain-groq
+chromadb
+sentence-transformers
+dotenv
+langchain_text_splitters
+langchain_huggingface
+langchain_chroma
+pymupdf 
+python-pptx 
+python-docx 
+pdf2image
+pytesseract
+flask
+flask_cors
