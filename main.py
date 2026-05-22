@@ -15,79 +15,78 @@ CORS(app)
 
 DATA_FOLDER = "./data"
 os.makedirs(DATA_FOLDER, exist_ok=True)
-embeddings = get_embeddings()
-llm = get_llm()
 
-print("System ready")
-db=None
+# Lazy-loaded globals (IMPORTANT for Render)
+embeddings = None
+llm = None
+db = None
 
+print("System initialized (lightweight startup)")
+
+
+# ------------------ INIT MODELS LAZILY ------------------
+def init_models():
+    global embeddings, llm
+
+    if embeddings is None:
+        embeddings = get_embeddings()
+
+    if llm is None:
+        llm = get_llm()
+
+
+# ------------------ UPLOAD ROUTE ------------------
 @app.route("/upload", methods=["POST"])
 def upload():
-
     global db
 
     try:
-        file = request.files["file"]
-        path = os.path.join(
-            DATA_FOLDER,
-            file.filename
-        )
-        file.save(path)
-        docs = load_code(DATA_FOLDER)
+        init_models()
 
+        file = request.files["file"]
+        path = os.path.join(DATA_FOLDER, file.filename)
+        file.save(path)
+
+        docs = load_code(DATA_FOLDER)
         chunks = get_chunks(docs)
 
-        db = create_vector_db(
-            chunks,
-            embeddings
-        )
+        db = create_vector_db(chunks, embeddings)
 
         return jsonify({
             "message": "File uploaded successfully"
         })
 
     except Exception as e:
-
-        return jsonify({
-            "error": str(e)
-        }), 500
+        return jsonify({"error": str(e)}), 500
 
 
+# ------------------ QUERY ROUTE ------------------
 @app.route("/query", methods=["POST"])
 def query():
+    global db
 
     try:
-        global db
-
         if db is None:
             return jsonify({
                 "error": "No documents uploaded yet"
             }), 400
 
+        init_models()
+
         data = request.get_json()
         question = data["question"]
 
-        print("Question:", question)
-
-        answer = get_response(
-            question,
-            db,
-            llm
-        )
+        answer = get_response(question, db, llm)
 
         return jsonify({
             "answer": answer
         })
 
     except Exception as e:
-        print("QUERY ERROR:")
-        print(str(e))
-
-        return jsonify({
-            "error": str(e)
-        }), 500
+        return jsonify({"error": str(e)}), 500
 
 
+# ------------------ ENTRY POINT ------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
