@@ -2,21 +2,13 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 
-from backend.code_loader import load_code
-from backend.rag_pipeline import get_chunks
-from backend.embeddings import get_embeddings
-from backend.vectordb import create_vector_db
-from backend.model import get_llm
-from backend.response import get_response
-
-
 app = Flask(__name__)
 CORS(app)
 
 DATA_FOLDER = "./data"
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
-# Lazy-loaded globals (IMPORTANT for Render)
+# Lazy-loaded globals (CRITICAL for keeping memory under Render's 512MB limit)
 embeddings = None
 llm = None
 db = None
@@ -24,9 +16,23 @@ db = None
 print("System initialized (lightweight startup)")
 
 
+# ------------------ 1. HEALTH CHECK ROUTE ------------------
+# Render hits this exact path to check if your port binding works!
+@app.route("/", methods=["GET"])
+def health_check():
+    return jsonify({
+        "status": "healthy", 
+        "message": "Render successfully bound to the port!"
+    }), 200
+
+
 # ------------------ INIT MODELS LAZILY ------------------
 def init_models():
     global embeddings, llm
+    
+    # Moving heavy imports inside ensures Gunicorn boots instantly
+    from backend.embeddings import get_embeddings
+    from backend.model import get_llm
 
     if embeddings is None:
         embeddings = get_embeddings()
@@ -39,11 +45,20 @@ def init_models():
 @app.route("/upload", methods=["POST"])
 def upload():
     global db
+    from backend.code_loader import load_code
+    from backend.rag_pipeline import get_chunks
+    from backend.vectordb import create_vector_db
 
     try:
         init_models()
 
+        if "file" not in request.files:
+            return jsonify({"error": "No file part in the request"}), 400
+
         file = request.files["file"]
+        if file.filename == "":
+            return jsonify({"error": "No selected file"}), 400
+
         path = os.path.join(DATA_FOLDER, file.filename)
         file.save(path)
 
@@ -64,6 +79,7 @@ def upload():
 @app.route("/query", methods=["POST"])
 def query():
     global db
+    from backend.response import get_response
 
     try:
         if db is None:
@@ -74,8 +90,10 @@ def query():
         init_models()
 
         data = request.get_json()
+        if not data or "question" not in data:
+            return jsonify({"error": "Missing question in request body"}), 400
+            
         question = data["question"]
-
         answer = get_response(question, db, llm)
 
         return jsonify({
