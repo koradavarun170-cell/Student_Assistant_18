@@ -1,5 +1,4 @@
 from backend.query import retrieve_docs
-from backend.reranker import rerank
 from backend.prompt import build_prompt
 
 
