@@ -7,9 +7,7 @@ function App() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  const BASE_URL = process.env.REACT_APP_BACKEND_URL || "https://student-assistant-18.vercel.app/";
-
+  const BASE_URL = process.env.REACT_APP_BACKEND_URL || "https://student-assistant-18.onrender.com";
   const uploadFile = async () => {
     if (!file) return;
 
