@@ -9,7 +9,11 @@ function App() {
   const [messages,setMessages]=useState([]);
   const [loading,setLoading]=useState(false);
   const BASE_URL = process.env.REACT_APP_BACKEND_URL;
+const BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
+if (!BASE_URL) {
+  console.error("Backend URL not set in environment variables");
+}
   const uploadFile=async()=>{
 
     if(!file) return;
