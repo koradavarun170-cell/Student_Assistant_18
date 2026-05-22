@@ -3,7 +3,8 @@ from flask_cors import CORS
 import os
 
 app = Flask(__name__)
-CORS(app)
+# Enable CORS cleanly for both local development and production domains
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 DATA_FOLDER = "./data"
 os.makedirs(DATA_FOLDER, exist_ok=True)
@@ -13,13 +14,12 @@ embeddings = None
 llm = None
 db = None
 
-print("System initialized (lightweight startup)")
-
 
 # ------------------ 1. HEALTH CHECK ROUTE ------------------
-# Render hits this exact path to check if your port binding works!
 @app.route("/", methods=["GET"])
 def health_check():
+    # Keep this completely blank of any imports or logic. 
+    # This must remain a lightning-fast return so Render's scanner hooks it instantly.
     return jsonify({
         "status": "healthy", 
         "message": "Render successfully bound to the port!"
@@ -30,7 +30,7 @@ def health_check():
 def init_models():
     global embeddings, llm
     
-    # Moving heavy imports inside ensures Gunicorn boots instantly
+    # Keeping heavy imports strictly inside functions ensures Gunicorn boots instantly
     from backend.embeddings import get_embeddings
     from backend.model import get_llm
 
@@ -42,8 +42,12 @@ def init_models():
 
 
 # ------------------ UPLOAD ROUTE ------------------
-@app.route("/upload", methods=["POST"])
+@app.route("/upload", methods=["POST", "OPTIONS"])
 def upload():
+    # Handle CORS Preflight browser request cleanly
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+
     global db
     from backend.code_loader import load_code
     from backend.rag_pipeline import get_chunks
@@ -76,8 +80,12 @@ def upload():
 
 
 # ------------------ QUERY ROUTE ------------------
-@app.route("/query", methods=["POST"])
+@app.route("/query", methods=["POST", "OPTIONS"])
 def query():
+    # Handle CORS Preflight browser request cleanly
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"}), 200
+
     global db
     from backend.response import get_response
 
@@ -106,5 +114,7 @@ def query():
 
 # ------------------ ENTRY POINT ------------------
 if __name__ == "__main__":
+    # This only runs during local development python main.py execution
+    print("System initialized safely via local entry point")
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
