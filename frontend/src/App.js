@@ -8,7 +8,7 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const BASE_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+  const BASE_URL = process.env.REACT_APP_BACKEND_URL || "https://student-assistant-18.vercel.app/";
 
   const uploadFile = async () => {
     if (!file) return;
