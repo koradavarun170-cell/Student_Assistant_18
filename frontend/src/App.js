@@ -7,20 +7,30 @@ function App() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const BASE_URL = process.env.REACT_APP_BACKEND_URL || "https://student-assistant-18.onrender.com";
+
+  // Dynamic fallback: Checks for live environment setup, defaults to local machine port
+  const BASE_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+
   const uploadFile = async () => {
-    if (!file) return;
+    if (!file) {
+      alert("Please select a file first");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      // Swapped hardcoded path with operational backend variable
-      const res = await axios.post(`${BASE_URL}/upload`, formData);
+      // FIXED: Added dynamic backend string back to the path
+      const res = await axios.post(`${BASE_URL}/upload`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       alert(res.data.message || "File uploaded successfully");
     } catch (err) {
-      console.error(err);
-      alert("Upload failed");
+      console.error("Upload error details:", err);
+      alert(err.response?.data?.error || "Upload failed. Is your local Flask server running?");
     }
   };
 
@@ -47,12 +57,12 @@ function App() {
 
       setMessages(prev => [...prev, aiMessage]);
     } catch (err) {
-      console.error(err);
+      console.error("Query error details:", err);
       setMessages(prev => [
         ...prev,
         {
           type: "ai",
-          text: "Error getting response"
+          text: err.response?.data?.error || "Error getting response from local backend."
         }
       ]);
     }

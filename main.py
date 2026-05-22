@@ -3,13 +3,13 @@ from flask_cors import CORS
 import os
 
 app = Flask(__name__)
-# Enable CORS cleanly for both local development and production domains
+# Enable CORS cleanly across all active endpoints for cross-domain requests
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 DATA_FOLDER = "./data"
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
-# Lazy-loaded globals (CRITICAL for keeping memory under Render's 512MB limit)
+# Lazy-loaded globals (Keeps system runtime memory ultra-low)
 embeddings = None
 llm = None
 db = None
@@ -18,11 +18,9 @@ db = None
 # ------------------ 1. HEALTH CHECK ROUTE ------------------
 @app.route("/", methods=["GET"])
 def health_check():
-    # Keep this completely blank of any imports or logic. 
-    # This must remain a lightning-fast return so Render's scanner hooks it instantly.
     return jsonify({
         "status": "healthy", 
-        "message": "Render successfully bound to the port!"
+        "message": "Backend engine online!"
     }), 200
 
 
@@ -30,7 +28,7 @@ def health_check():
 def init_models():
     global embeddings, llm
     
-    # Keeping heavy imports strictly inside functions ensures Gunicorn boots instantly
+    # Internal functional imports optimize memory isolation
     from backend.embeddings import get_embeddings
     from backend.model import get_llm
 
@@ -44,7 +42,6 @@ def init_models():
 # ------------------ UPLOAD ROUTE ------------------
 @app.route("/upload", methods=["POST", "OPTIONS"])
 def upload():
-    # Handle CORS Preflight browser request cleanly
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"}), 200
 
@@ -72,7 +69,7 @@ def upload():
         db = create_vector_db(chunks, embeddings)
 
         return jsonify({
-            "message": "File uploaded successfully"
+            "message": f"File '{file.filename}' processed and indexed locally successfully!"
         })
 
     except Exception as e:
@@ -82,7 +79,6 @@ def upload():
 # ------------------ QUERY ROUTE ------------------
 @app.route("/query", methods=["POST", "OPTIONS"])
 def query():
-    # Handle CORS Preflight browser request cleanly
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"}), 200
 
@@ -92,7 +88,7 @@ def query():
     try:
         if db is None:
             return jsonify({
-                "error": "No documents uploaded yet"
+                "error": "No documents uploaded to database yet. Please submit a file."
             }), 400
 
         init_models()
@@ -114,7 +110,8 @@ def query():
 
 # ------------------ ENTRY POINT ------------------
 if __name__ == "__main__":
-    # This only runs during local development python main.py execution
-    print("System initialized safely via local entry point")
+    print("--------------------------------------------------")
+    print("🚀 FLASK RUNNING LOCALLY ON: http://localhost:5000")
+    print("--------------------------------------------------")
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=True)
