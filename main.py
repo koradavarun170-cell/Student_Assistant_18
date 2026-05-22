@@ -14,11 +14,12 @@ app = Flask(__name__)
 CORS(app)
 
 DATA_FOLDER = "./data"
+os.makedirs(DATA_FOLDER, exist_ok=True)
 embeddings = get_embeddings()
 llm = get_llm()
 
 print("System ready")
-
+db=None
 
 @app.route("/upload", methods=["POST"])
 def upload():
@@ -56,9 +57,14 @@ def upload():
 def query():
 
     try:
+        global db
+
+        if db is None:
+            return jsonify({
+                "error": "No documents uploaded yet"
+            }), 400
 
         data = request.get_json()
-
         question = data["question"]
 
         print("Question:", question)
@@ -74,19 +80,14 @@ def query():
         })
 
     except Exception as e:
-
         print("QUERY ERROR:")
         print(str(e))
 
         return jsonify({
             "error": str(e)
-        }),500
+        }), 500
 
 
 if __name__ == "__main__":
-
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=False
-    )
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)

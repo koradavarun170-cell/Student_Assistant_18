@@ -8,6 +8,7 @@ function App() {
   const [question,setQuestion]=useState("");
   const [messages,setMessages]=useState([]);
   const [loading,setLoading]=useState(false);
+  const BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
   const uploadFile=async()=>{
 
@@ -19,7 +20,7 @@ function App() {
     try{
 
       const res=await axios.post(
-        "http://localhost:5000/upload",
+        `${BASE_URL}/upload`,
         formData
       );
 
@@ -53,7 +54,7 @@ function App() {
     try{
 
       const res=await axios.post(
-        "http://localhost:5000/query",
+        `${BASE_URL}/query`,
         {
           question
         }
