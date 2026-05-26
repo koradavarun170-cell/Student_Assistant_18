@@ -8,7 +8,9 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const BASE_URL = "http://localhost:8000";
+  const BASE_URL = window.location.hostname === "localhost" 
+  ? "http://localhost:8000" 
+  : `http://${window.location.hostname}:8000`;
 
   const uploadFile = async () => {
 
