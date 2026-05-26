@@ -1,34 +1,30 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import os
 
-app = Flask(__name__)
-# Enable CORS cleanly across all active endpoints for cross-domain requests
-CORS(app, resources={r"/*": {"origins": "*"}})
+app = FastAPI()
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 DATA_FOLDER = "./data"
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
-# Lazy-loaded globals (Keeps system runtime memory ultra-low)
 embeddings = None
 llm = None
 db = None
 
 
-# ------------------ 1. HEALTH CHECK ROUTE ------------------
-@app.route("/", methods=["GET"])
-def health_check():
-    return jsonify({
-        "status": "healthy", 
-        "message": "Backend engine online!"
-    }), 200
-
-
-# ------------------ INIT MODELS LAZILY ------------------
 def init_models():
     global embeddings, llm
-    
-    # Internal functional imports optimize memory isolation
+
     from backend.embeddings import get_embeddings
     from backend.model import get_llm
 
@@ -38,14 +34,19 @@ def init_models():
     if llm is None:
         llm = get_llm()
 
+@app.get("/")
+def health_check():
+    print("Health check endpoint called")
+    return {
+        "status": "healthy",
+        "message": "FastAPI backend online!"
+    }
 
-# ------------------ UPLOAD ROUTE ------------------
-@app.route("/upload", methods=["POST", "OPTIONS"])
-def upload():
-    if request.method == "OPTIONS":
-        return jsonify({"status": "ok"}), 200
+@app.post("/upload")
+async def upload(file: UploadFile = File(...)):
 
     global db
+
     from backend.code_loader import load_code
     from backend.rag_pipeline import get_chunks
     from backend.vectordb import create_vector_db
@@ -53,65 +54,52 @@ def upload():
     try:
         init_models()
 
-        if "file" not in request.files:
-            return jsonify({"error": "No file part in the request"}), 400
-
-        file = request.files["file"]
-        if file.filename == "":
-            return jsonify({"error": "No selected file"}), 400
-
         path = os.path.join(DATA_FOLDER, file.filename)
-        file.save(path)
+
+        with open(path, "wb") as f:
+            f.write(await file.read())
 
         docs = load_code(DATA_FOLDER)
+
         chunks = get_chunks(docs)
 
         db = create_vector_db(chunks, embeddings)
 
-        return jsonify({
-            "message": f"File '{file.filename}' processed and indexed locally successfully!"
-        })
+        return {
+            "message": f"{file.filename} uploaded successfully!"
+        }
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return {"error": str(e)}
 
+class QueryRequest(BaseModel):
+    question: str
 
-# ------------------ QUERY ROUTE ------------------
-@app.route("/query", methods=["POST", "OPTIONS"])
-def query():
-    if request.method == "OPTIONS":
-        return jsonify({"status": "ok"}), 200
+@app.post("/query")
+async def query(data: QueryRequest):
 
     global db
+
     from backend.response import get_response
 
     try:
+
         if db is None:
-            return jsonify({
-                "error": "No documents uploaded to database yet. Please submit a file."
-            }), 400
+            return {
+                "error": "No documents uploaded yet."
+            }
 
         init_models()
 
-        data = request.get_json()
-        if not data or "question" not in data:
-            return jsonify({"error": "Missing question in request body"}), 400
-            
-        question = data["question"]
-        answer = get_response(question, db, llm)
+        answer = get_response(
+            data.question,
+            db,
+            llm
+        )
 
-        return jsonify({
+        return {
             "answer": answer
-        })
+        }
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-# ------------------ ENTRY POINT ------------------
-if __name__ == "__main__":
-    print("--------------------------------------------------")
-    print("🚀 FLASK RUNNING LOCALLY ON: http://localhost:5000")
-    print("--------------------------------------------------")
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+        return {"error": str(e)}

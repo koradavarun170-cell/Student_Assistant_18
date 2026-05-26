@@ -8,6 +8,7 @@ __pycache__/
 
 # Vector DB
 chroma_db/
+data/
 
 # Node
 node_modules/

@@ -8,6 +8,6 @@ def get_llm():
     return ChatGroq(
         model="llama-3.3-70b-versatile",
         temperature=0.1,
-        max_tokens=8192,
+        max_tokens=1024,
         api_key=os.getenv("groq_api_key")
     )

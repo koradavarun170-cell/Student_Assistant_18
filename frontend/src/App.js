@@ -8,10 +8,10 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Dynamic fallback: Checks for live environment setup, defaults to local machine port
-  const BASE_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+  const BASE_URL = "http://localhost:8000";
 
   const uploadFile = async () => {
+
     if (!file) {
       alert("Please select a file first");
       return;
@@ -21,49 +21,71 @@ function App() {
     formData.append("file", file);
 
     try {
-      // FIXED: Added dynamic backend string back to the path
-      const res = await axios.post(`${BASE_URL}/upload`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      alert(res.data.message || "File uploaded successfully");
+
+      const res = await axios.post(
+        `${BASE_URL}/upload`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      alert(res.data.message);
+
     } catch (err) {
-      console.error("Upload error details:", err);
-      alert(err.response?.data?.error || "Upload failed. Is your local Flask server running?");
+
+      console.error(err);
+
+      alert(
+        err.response?.data?.error ||
+        "File upload failed"
+      );
     }
   };
 
   const askQuestion = async () => {
+
     if (!question.trim()) return;
 
     const userMessage = {
       type: "user",
-      text: question
+      text: question,
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
+
     setLoading(true);
 
     try {
-      const res = await axios.post(`${BASE_URL}/query`, {
-        question
-      });
+
+      const res = await axios.post(
+        `${BASE_URL}/query`,
+        {
+          question: question,
+        }
+      );
 
       const aiMessage = {
         type: "ai",
-        text: res.data.answer
+        text: res.data.answer,
       };
 
-      setMessages(prev => [...prev, aiMessage]);
+      setMessages((prev) => [...prev, aiMessage]);
+
     } catch (err) {
-      console.error("Query error details:", err);
-      setMessages(prev => [
+
+      console.error(err);
+
+      setMessages((prev) => [
         ...prev,
         {
           type: "ai",
-          text: err.response?.data?.error || "Error getting response from local backend."
-        }
+          text:
+            err.response?.data?.error ||
+            "Error connecting to FastAPI backend",
+        },
       ]);
     }
 
@@ -73,43 +95,79 @@ function App() {
 
   return (
     <div className="app">
+
+      {/* Sidebar */}
       <div className="sidebar">
-        <div className="logo">AI Assistant</div>
+
+        <div className="logo">
+          AI Assistant
+        </div>
+
         <div className="uploadBox">
-          <input type="file" onChange={(e) => setFile(e.target.files[0])} />
-          <button onClick={uploadFile}>Upload File</button>
+
+          <input
+            type="file"
+            onChange={(e) => setFile(e.target.files[0])}
+          />
+
+          <button onClick={uploadFile}>
+            Upload File
+          </button>
+
         </div>
-        <div className="history">
-          <h3>Recent Topics</h3>
-          <div className="historyItem">NLP</div>
-          <div className="historyItem">Regex</div>
-          <div className="historyItem">Tokenization</div>
-        </div>
+
       </div>
 
+      {/* Main Content */}
       <div className="main">
+
         <div className="header">
+
           <h1>AI Student Assistant</h1>
-          <p>Upload documents and ask questions</p>
+
+          <p>
+            Upload documents and ask questions
+          </p>
+
         </div>
 
+        {/* Chat */}
         <div className="chatContainer">
+
           {messages.map((msg, index) => (
-            <div key={index} className={`message ${msg.type}`}>
+
+            <div
+              key={index}
+              className={`message ${msg.type}`}
+            >
               {msg.text}
             </div>
+
           ))}
-          {loading && <div className="message ai">Thinking...</div>}
+
+          {loading && (
+            <div className="message ai">
+              Thinking...
+            </div>
+          )}
+
         </div>
 
+        {/* Input */}
         <div className="inputArea">
+
           <textarea
             placeholder="Ask anything..."
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
           />
-          <button onClick={askQuestion}>Send</button>
+
+          <button onClick={askQuestion}>
+            Send
+          </button>
+
         </div>
+
       </div>
     </div>
   );

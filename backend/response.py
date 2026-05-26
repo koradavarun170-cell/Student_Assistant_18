@@ -9,11 +9,6 @@ def get_response(query, db, llm, k=8, top_k=5):
     if not docs:
         return "No relevant context found in the codebase."
 
-    # # 2. rerank (optional improvement step)
-    # docs = rerank(query, docs, top_k=top_k)
-
-    # if not docs:
-    #     return "No relevant context after reranking."
 
     prompt = build_prompt(query, docs)
 
