@@ -10,7 +10,7 @@ function App() {
 
   const BASE_URL = window.location.hostname === "localhost" 
   ? "http://localhost:8000" 
-  : `http://${window.location.hostname}:8000`;
+  : "http://13.232.86.221:8000"; 
 
   const uploadFile = async () => {
 
