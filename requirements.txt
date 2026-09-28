@@ -14,8 +14,11 @@ docx2txt
 unstructured
 python-pptx
 rank_bm25
+langgraph
 
 fastapi
 uvicorn
 pydantic
 python-multipart
+streamlit
+requests

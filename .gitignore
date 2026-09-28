@@ -15,6 +15,7 @@ dist-ssr
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea
 .DS_Store
 *.suo
@@ -26,3 +27,8 @@ dist-ssr
 .venv
 .env
 uv.lock
+__pycache__/
+*.pyc
+.pytest_cache/
+Chroma_db/
+backend/Chroma_db/

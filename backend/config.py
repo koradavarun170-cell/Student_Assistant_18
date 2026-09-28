@@ -1,10 +1,15 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 from langchain_cohere import CohereEmbeddings
 from langchain_groq import ChatGroq
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 
+# Search for .env in current file's directory (backend/.env) and current working directory
+_backend_env = Path(__file__).resolve().parent / ".env"
+if _backend_env.exists():
+    load_dotenv(dotenv_path=_backend_env)
 load_dotenv()
 
 
@@ -22,10 +27,8 @@ class Config:
         self.cohere_api_key = os.getenv("COHERE_API_KEY")
         self.groq_api_key = os.getenv("GROQ_API_KEY")
 
-        self.embeddings = CohereEmbeddings(
-            model="embed-v4.0",
-            cohere_api_key=self.cohere_api_key
-        )
+        self.embeddings = CohereEmbeddings(# type: ignore[call-arg] 
+        model="embed-v4.0",cohere_api_key=self.cohere_api_key)
 
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
@@ -39,7 +42,7 @@ class Config:
         )
 
         self.llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+            model=os.getenv("GROQ_MODEL", "openai/gpt-oss-120b"),
             groq_api_key=self.groq_api_key,
             temperature=0
         )

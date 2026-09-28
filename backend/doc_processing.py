@@ -13,6 +13,7 @@ class DocumentProcessor:
     def __init__(self, splitter):
         self.text_splitter = splitter
     def check_file(self,file_lower,full_path,file,user_id):
+        docs = None
         if file_lower.endswith(".pdf"):
 
             loader = PDFMinerLoader(

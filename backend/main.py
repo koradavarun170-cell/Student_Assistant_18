@@ -37,6 +37,8 @@ async def upload_documents(
     uploaded_paths = []
 
     for file in files:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="Uploaded file must have a filename.")
         path = os.path.join(user_folder, file.filename)
         with open(path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)

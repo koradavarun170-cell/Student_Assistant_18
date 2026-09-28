@@ -1,11 +1,13 @@
 services:
   backend:
-    image: varunkorada/student-assistant:v1
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
       - rag_files:/app/source_files
-      - rag_vectorstore:/app/chroma_db
+      - rag_vectorstore:/app/Chroma_db
     env_file:
       - .env
     restart: unless-stopped

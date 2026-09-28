@@ -1,0 +1,30 @@
+services:
+  # Backend FastAPI Service (Docker)
+  - type: web
+    name: student-assistant-backend
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    region: oregon
+    healthCheckPath: /
+    envVars:
+      - key: COHERE_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+
+  # Frontend Streamlit Service (Docker)
+  - type: web
+    name: student-assistant-frontend
+    runtime: docker
+    dockerfilePath: frontend/Dockerfile
+    dockerContext: frontend
+    plan: free
+    region: oregon
+    envVars:
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: student-assistant-backend
+          property: host
