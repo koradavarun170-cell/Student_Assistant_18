@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 from typing import List, Annotated
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,7 +18,7 @@ app.add_middleware(
 )
 rag = StudentAssistantRAG()
 
-UPLOAD_FOLDER = "source_files"
+UPLOAD_FOLDER = str(Path(__file__).resolve().parent / "source_files")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.get("/")
