@@ -25,7 +25,7 @@ class StudentAssistantRAG:
 
     def __init__(
         self,
-        persist_directory="./Chroma_db",
+        persist_directory=None,
         collection_name="merged_collection"
     ):
         config = Config(persist_directory, collection_name)

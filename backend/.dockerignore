@@ -1,9 +1,0 @@
-.env
-.venv
-venv/
-__pycache__/
-*.pyc
-.git/
-source_files/
-student-assistant-ui/
-uv.lock
