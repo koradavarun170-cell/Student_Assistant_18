@@ -143,11 +143,21 @@ if "pending_question" not in st.session_state:
     st.session_state["pending_question"] = None
 
 # Backend API Configuration
-DEFAULT_API_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
-if "api_url" not in st.session_state:
-    st.session_state["api_url"] = DEFAULT_API_URL
+def get_backend_url():
+    if "BACKEND_URL" in os.environ and os.environ["BACKEND_URL"]:
+        return os.environ["BACKEND_URL"].rstrip("/")
+    try:
+        if hasattr(st, "secrets") and "BACKEND_URL" in st.secrets and st.secrets["BACKEND_URL"]:
+            return st.secrets["BACKEND_URL"].rstrip("/")
+    except Exception:
+        pass
+    return "https://student-assistant-18-backend.onrender.com"
+
+API_URL = get_backend_url()
+st.session_state["api_url"] = API_URL
 
 
+@st.cache_data(ttl=15)
 def check_backend_health(base_url):
     try:
         r = requests.get(f"{base_url}/", timeout=3)
@@ -165,47 +175,34 @@ with st.sidebar:
             <div class="brand-icon">📚</div>
             <div>
                 <div class="brand-title">StudyMind</div>
-                <div class="brand-sub">Document AI Assistant (LangGraph)</div>
+                <div class="brand-sub">Document AI Assistant</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-    # Session ID Management
-    st.markdown("##### 👤 Session Identification")
-    user_id_input = st.text_input(
-        "Session ID / User ID",
-        value=st.session_state["user_id"],
-        help="All documents and memory are scoped to this unique session ID."
-    )
-    if user_id_input != st.session_state["user_id"]:
-        st.session_state["user_id"] = user_id_input.strip()
-
     # Connection Status
-    is_online = check_backend_health(st.session_state["api_url"])
+    is_online = check_backend_health(API_URL)
     if is_online:
         st.markdown("""
             <div class="status-badge status-connected">
                 <span class="status-dot status-dot-green"></span>
-                <span>Backend Online</span>
+                <span>System Online</span>
             </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
             <div class="status-badge status-disconnected">
                 <span class="status-dot status-dot-red"></span>
-                <span>Backend Offline</span>
+                <span>System Connecting...</span>
             </div>
         """, unsafe_allow_html=True)
 
-    with st.expander("⚙️ Backend API Settings", expanded=False):
-        custom_url = st.text_input(
-            "FastAPI URL",
-            value=st.session_state["api_url"],
-            help="Set to your local or deployed Render URL (e.g. https://student-assistant-api.onrender.com)"
-        )
-        if custom_url != st.session_state["api_url"]:
-            st.session_state["api_url"] = custom_url.rstrip("/")
-            st.rerun()
+    # New Chat Session Action
+    if st.button("➕ New Chat Session", use_container_width=True):
+        st.session_state["user_id"] = "student_" + str(uuid.uuid4())[:8]
+        st.session_state["messages"] = []
+        st.session_state["uploaded_files"] = []
+        st.rerun()
 
     st.markdown("---")
 
@@ -307,7 +304,7 @@ with st.sidebar:
 # Main Chat Area
 # ─────────────────────────────────────────────────────────────────────────────
 st.title("📚 StudyMind Document Assistant")
-st.caption(f"Connected to LangGraph RAG Agent | Active Session: `{st.session_state['user_id']}`")
+st.caption("Grounded Document Intelligence Powered by LangGraph & Groq")
 
 # Empty State / Starter Suggestions
 if len(st.session_state["messages"]) == 0:

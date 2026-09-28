@@ -15,16 +15,21 @@ class DocumentProcessor:
     def check_file(self,file_lower,full_path,file,user_id):
         docs = None
         if file_lower.endswith(".pdf"):
-
-            loader = PDFMinerLoader(
-                full_path,
-                extract_images=True,
-                mode="page",
-                images_parser=RapidOCRBlobParser(),
-                images_inner_format="html-img"
-            )
-
+            # 1. Fast text extraction using minimal RAM (< 30MB)
+            loader = PDFMinerLoader(full_path, mode="page")
             docs = loader.load()
+
+            # 2. Fallback to memory-heavy OCR only if the PDF has no selectable text (scanned)
+            total_text = "".join(d.page_content.strip() for d in docs)
+            if len(total_text) < 50:
+                loader = PDFMinerLoader(
+                    full_path,
+                    extract_images=True,
+                    mode="page",
+                    images_parser=RapidOCRBlobParser(),
+                    images_inner_format="html-img"
+                )
+                docs = loader.load()
 
         elif file_lower.endswith((".docx", ".doc")):
 
@@ -46,6 +51,9 @@ class DocumentProcessor:
             for chunk in chunks:
                 chunk.metadata["user_id"] = user_id
                 chunk.metadata["source_file"] = file
+
+            import gc
+            gc.collect()
 
             return chunks
         return []

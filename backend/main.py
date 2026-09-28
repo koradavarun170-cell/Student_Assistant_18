@@ -1,5 +1,6 @@
 import os
 import shutil
+import gc
 from pathlib import Path
 from typing import List, Annotated
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -50,6 +51,8 @@ async def upload_documents(
     else:
         rag.add_file(uploaded_paths, user_id)
 
+    gc.collect()
+
     return {"message": "Documents uploaded successfully."}
 
 @app.post("/query")
@@ -76,6 +79,8 @@ async def delete(request: DeleteRequest):
         request.user_id,
         request.filename
     )
+
+    gc.collect()
 
     return {
         "message": "Deleted successfully."
